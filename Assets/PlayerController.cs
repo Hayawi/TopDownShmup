@@ -6,11 +6,6 @@ public class PlayerController : MonoBehaviour {
 	public float characterSpeed;
 	public Camera characterCamera;
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
 	// Update is called once per frame
 	void FixedUpdate () {
 		if (Input.GetButton("Horizontal")) {
@@ -22,11 +17,12 @@ public class PlayerController : MonoBehaviour {
 		FaceMouse();
 	}
 
-	void FaceMouse () {
-		Vector3 mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, -25);
+	 void FaceMouse () {
+		Vector3 mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
 		Vector3 lookPos = characterCamera.ScreenToWorldPoint(mousePos);
 		lookPos = lookPos - transform.position;
-		float angle = Mathf.Atan2(lookPos.y, lookPos.x) * Mathf.Rad2Deg;
+		float angle = (Mathf.Atan2(lookPos.y, lookPos.x) * Mathf.Rad2Deg) - 90f;
 		transform.rotation = Quaternion.AngleAxis (angle, Vector3.forward);
+		characterCamera.GetComponent<Transform> ().rotation = Quaternion.AngleAxis (0, Vector3.forward);
 	}
 }
