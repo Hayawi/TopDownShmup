@@ -25,7 +25,7 @@ public class PlayerController : MonoBehaviour {
 		Vector3 lookPos = characterCamera.ScreenToWorldPoint(mousePos);
 		lookPos = lookPos - transform.position;
 		float angle = (Mathf.Atan2(lookPos.y, lookPos.x) * Mathf.Rad2Deg) - 90f;
-		//characterBody.GetComponent<Transform>().rotation = Quaternion.AngleAxis (angle, Vector3.forward);
+		characterBody.GetComponent<Transform>().rotation = Quaternion.AngleAxis (angle, Vector3.forward);
         characterRotation = angle;
 		//characterCamera.GetComponent<Transform> ().rotation = Quaternion.AngleAxis (0, Vector3.forward);
 	}
