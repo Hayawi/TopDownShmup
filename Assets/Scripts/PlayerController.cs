@@ -6,16 +6,26 @@ public class PlayerController : MonoBehaviour {
 	public float characterSpeed;
 	public Camera characterCamera;
     public GameObject characterBody;
+	private Animator playerAnimator;
 
     private float characterRotation;
+
+	void Start() {
+		playerAnimator = characterBody.GetComponent<Animator> ();
+	}
 
 	// Update is called once per frame
 	void FixedUpdate () {
 		if (Input.GetButton("Horizontal")) {
 			GetComponent<Transform> ().Translate(new Vector3(characterSpeed * Input.GetAxis("Horizontal"), 0, 0));
+			playerAnimator.SetBool ("Walking", true);
 		}
 		if (Input.GetButton ("Vertical")) {
 			GetComponent<Transform> ().Translate(new Vector3(0, characterSpeed * Input.GetAxis("Vertical"), 0));
+			playerAnimator.SetBool ("Walking", true);
+		}
+		if (!Input.GetButton ("Vertical") && !Input.GetButton ("Horizontal")) {
+			playerAnimator.SetBool ("Walking", false);
 		}
 		FaceMouse();
 	}

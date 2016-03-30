@@ -15,9 +15,11 @@ public class ShootingController : MonoBehaviour {
 
 	private float fireTimer = 0f;
 
+	private Animator playerAnimator;
+
 	// Use this for initialization
 	void Start () {
-	
+		playerAnimator = characterBody.GetComponent<Animator> ();
 	}
 	
 	// Update is called once per frame
@@ -26,6 +28,10 @@ public class ShootingController : MonoBehaviour {
 			spawnNewBullet();
 			fireTimer = 0;
 		}
+		if (Input.GetButton ("Shoot"))
+			playerAnimator.SetBool ("Shooting", true);
+		else
+			playerAnimator.SetBool ("Shooting", false);
 		fireTimer += 1;
 	}
 
