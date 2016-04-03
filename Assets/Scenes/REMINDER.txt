@@ -1,0 +1,1 @@
+Remeber, do not edit scenes unless you know they others have not edited them aswell. Scene changes cannot be merged by GIT and must be done manualy

@@ -9,21 +9,21 @@ public class PlayerController : MonoBehaviour {
 	private Animator playerAnimator;
 
     private float characterRotation;
+    private Rigidbody2D rigBody;
+    private Transform charTrans;
+    private Transform camTrans;
 
-	void Start() {
-		playerAnimator = characterBody.GetComponent<Animator> ();
-	}
+    void Start() {
+        playerAnimator = characterBody.GetComponent<Animator>();
+        rigBody = GetComponent<Rigidbody2D>();
+        charTrans = characterBody.GetComponent<Transform>();
+        camTrans = characterCamera.GetComponent<Transform>();
+        }
 
 	// Update is called once per frame
 	void FixedUpdate () {
-		if (Input.GetButton("Horizontal")) {
-			GetComponent<Transform> ().Translate(new Vector3(characterSpeed * Input.GetAxis("Horizontal"), 0, 0));
+		rigBody.velocity = new Vector2(characterSpeed * Input.GetAxis("Horizontal"), characterSpeed * Input.GetAxis("Vertical"));
 			playerAnimator.SetBool ("Walking", true);
-		}
-		if (Input.GetButton ("Vertical")) {
-			GetComponent<Transform> ().Translate(new Vector3(0, characterSpeed * Input.GetAxis("Vertical"), 0));
-			playerAnimator.SetBool ("Walking", true);
-		}
 		if (!Input.GetButton ("Vertical") && !Input.GetButton ("Horizontal")) {
 			playerAnimator.SetBool ("Walking", false);
 		}
@@ -35,8 +35,8 @@ public class PlayerController : MonoBehaviour {
 		Vector3 lookPos = characterCamera.ScreenToWorldPoint(mousePos);
 		lookPos = lookPos - transform.position;
 		float angle = (Mathf.Atan2(lookPos.y, lookPos.x) * Mathf.Rad2Deg) - 90f;
-		characterBody.GetComponent<Transform>().rotation = Quaternion.AngleAxis (angle, Vector3.forward);
+		charTrans.rotation = Quaternion.AngleAxis (angle, Vector3.forward);
         characterRotation = angle;
-		characterCamera.GetComponent<Transform> ().rotation = Quaternion.AngleAxis (0, Vector3.forward);
+		camTrans.rotation = Quaternion.AngleAxis (0, Vector3.forward);
 	}
 }
