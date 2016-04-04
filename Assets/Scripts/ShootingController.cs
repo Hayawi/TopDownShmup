@@ -41,6 +41,5 @@ public class ShootingController : MonoBehaviour {
 		bulletClone.GetComponent<Transform>().rotation = Quaternion.AngleAxis (angle, Vector3.forward);
 
 		bulletClone.velocity =  new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad)) * bulletSpeed;
-		print (angle);
 	}
 }
