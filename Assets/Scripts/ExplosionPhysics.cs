@@ -1,13 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.Networking;
 
-public class ExplosionPhysics : MonoBehaviour {
+public class ExplosionPhysics : NetworkBehaviour {
 
     public int health = 1;
 
     public BoxCollider2D explosion;
 
-    public Rigidbody2D crater;
+    public GameObject crater;
 
 	// Use this for initialization
 	void Start () {
@@ -16,7 +17,7 @@ public class ExplosionPhysics : MonoBehaviour {
     
     void OnCollisionEnter2D(Collision2D coll)
     {
-        if (coll.gameObject.tag == "Bullet")
+        if (coll.gameObject.tag == "Bullet" || coll.gameObject.tag == "notBullet")
         {
             health -= 1;
             Destroy(coll.gameObject);
@@ -28,8 +29,15 @@ public class ExplosionPhysics : MonoBehaviour {
         if (health <= 0)
         {
             Instantiate(explosion, gameObject.GetComponent<Transform>().position, explosion.GetComponent<Transform>().rotation);
-            Instantiate(crater, gameObject.GetComponent<Transform>().position, crater.GetComponent<Transform>().rotation);
+            CmdSpawnCrater();
             Destroy(gameObject);
         }
+    }
+
+    [Command]
+    void CmdSpawnCrater()
+    {
+        GameObject craterClone = (GameObject)Instantiate(crater, gameObject.GetComponent<Transform>().position, crater.GetComponent<Transform>().rotation);
+        NetworkServer.Spawn(craterClone);
     }
 }

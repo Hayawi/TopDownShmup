@@ -11,7 +11,7 @@ public class ExplosionDeath : MonoBehaviour {
 	}
 
     // Update is called once per frame
-    void Update () {
+    void FixedUpdate () {
 	    if (animator.GetCurrentAnimatorStateInfo(0).IsName("Die"))
         {
             Destroy(gameObject);

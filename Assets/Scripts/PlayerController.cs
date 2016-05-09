@@ -1,14 +1,17 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.Networking;
 
-public class PlayerController : MonoBehaviour {
+public class PlayerController : NetworkBehaviour {
 
+    [SyncVar]
 	public float characterSpeed;
-	public Camera characterCamera;
-    public GameObject characterBody;
-	private Animator playerAnimator;
 
-    private float characterRotation;
+    public Camera characterCamera;
+
+    public GameObject characterBody;
+
+	private Animator playerAnimator;
 
 	void Start() {
 		playerAnimator = characterBody.GetComponent<Animator> ();
@@ -16,18 +19,24 @@ public class PlayerController : MonoBehaviour {
 
 	// Update is called once per frame
 	void FixedUpdate () {
-		if (Input.GetButton("Horizontal")) {
-			GetComponent<Transform> ().Translate(new Vector3(characterSpeed * Input.GetAxis("Horizontal"), 0, 0));
-			playerAnimator.SetBool ("Walking", true);
-		}
-		if (Input.GetButton ("Vertical")) {
-			GetComponent<Transform> ().Translate(new Vector3(0, characterSpeed * Input.GetAxis("Vertical"), 0));
-			playerAnimator.SetBool ("Walking", true);
-		}
-		if (!Input.GetButton ("Vertical") && !Input.GetButton ("Horizontal")) {
-			playerAnimator.SetBool ("Walking", false);
-		}
-		FaceMouse();
+        if (!playerAnimator.GetBool("Dead"))
+        {
+            if (Input.GetButton("Horizontal"))
+            {
+                GetComponent<Transform>().Translate(new Vector3(characterSpeed * Input.GetAxis("Horizontal"), 0, 0));
+                playerAnimator.SetBool("Walking", true);
+            }
+            if (Input.GetButton("Vertical"))
+            {
+                GetComponent<Transform>().Translate(new Vector3(0, characterSpeed * Input.GetAxis("Vertical"), 0));
+                playerAnimator.SetBool("Walking", true);
+            }
+            if (!Input.GetButton("Vertical") && !Input.GetButton("Horizontal"))
+            {
+                playerAnimator.SetBool("Walking", false);
+            }
+            FaceMouse();
+        }
 	}
 
 	 void FaceMouse () {
@@ -36,7 +45,6 @@ public class PlayerController : MonoBehaviour {
 		lookPos = lookPos - transform.position;
 		float angle = (Mathf.Atan2(lookPos.y, lookPos.x) * Mathf.Rad2Deg) - 90f;
 		characterBody.GetComponent<Transform>().rotation = Quaternion.AngleAxis (angle, Vector3.forward);
-        characterRotation = angle;
 		characterCamera.GetComponent<Transform> ().rotation = Quaternion.AngleAxis (0, Vector3.forward);
 	}
 }

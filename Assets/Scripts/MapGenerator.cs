@@ -1,62 +1,88 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.Networking;
 
-public class MapGenerator : MonoBehaviour {
+public class MapGenerator : NetworkBehaviour {
 
-	public Rigidbody2D[] floorTile;
+	public GameObject[] floorTile;
 
-    public BoxCollider2D wallTile;
-    public BoxCollider2D barrelTile;
-    public BoxCollider2D boxTile;
+    public GameObject wallTile;
+    public GameObject barrelTile;
+    public GameObject boxTile;
 
+    [SyncVar]
     private ArrayList boxes = new ArrayList();
+    [SyncVar]
     private ArrayList barrels = new ArrayList();
 
+    [SyncVar]
     public float barrelX;
+    [SyncVar]
     public float barrelY;
 
+    [SyncVar]
     public float boxX;
+    [SyncVar]
     public float boxY;
 
+    [SyncVar]
     public float wallTileSize = 3.2f;
 
+    [SyncVar]
     public float floorTileSize = 3.2014f;
 
-    public Rigidbody2D buildingFloorTile;
+    public GameObject buildingFloorTile;
 
+    [SyncVar]
     public float buildingFloorTileSize = 4.81f;
 
-	public float complexSizeX;
-	public float complexSizeY;
+    [SyncVar]
+    public float complexSizeX;
+    [SyncVar]
+    public float complexSizeY;
 
+    [SyncVar]
     public float buildingSize = 30;
+
+    [SyncVar]
+    public bool initialisedMap = false;
 
 	// Use this for initialization
 	void Start () {
-		float xStart = (complexSizeX / 2) * floorTileSize;
-		float yStart = (complexSizeY / 2) * floorTileSize;
+        float xStart = (complexSizeX / 2) * floorTileSize;
+        float yStart = (complexSizeY / 2) * floorTileSize;
         groundInitialise(xStart, yStart);
-        barrelBoxGeneration(xStart, yStart);
-        barrelBoxProcedural();
-        barrelBoxProcedural();
         outerWallGeneration(xStart, yStart);
-        buildingGeneration(xStart, yStart);
+    }
+
+    void Update()
+    {
+        if (!initialisedMap)
+        {
+                float xStart = (complexSizeX / 2) * floorTileSize;
+                float yStart = (complexSizeY / 2) * floorTileSize;
+                barrelBoxGeneration(xStart, yStart);
+                barrelBoxProcedural();
+                barrelBoxProcedural();
+                buildingGeneration(xStart, yStart);
+                initialisedMap = true;
+        }
     }
 
     void outerWallGeneration(float xStart, float yStart) 
     {
-        Instantiate(wallTile, new Vector3(-xStart - wallTileSize, -yStart - wallTileSize, 0), wallTile.GetComponent<Transform>().rotation);
+        ((GameObject)Instantiate(wallTile, new Vector3(-xStart - wallTileSize, -yStart - wallTileSize, 0), wallTile.GetComponent<Transform>().rotation)).transform.SetParent(transform, false);
         for (float i = -xStart; i < xStart; i+= wallTileSize)
         {
-            Instantiate(wallTile, new Vector3(i, -yStart - wallTileSize, 0), wallTile.GetComponent<Transform>().rotation);
-            Instantiate(wallTile, new Vector3(i, yStart, 0), wallTile.GetComponent<Transform>().rotation);
+            ((GameObject)Instantiate(wallTile, new Vector3(i, -yStart - wallTileSize, 0), wallTile.GetComponent<Transform>().rotation)).transform.SetParent(transform, false);
+            ((GameObject)Instantiate(wallTile, new Vector3(i, yStart, 0), wallTile.GetComponent<Transform>().rotation)).transform.SetParent(transform, false);
         }
 
-        Instantiate(wallTile, new Vector3(-xStart - wallTileSize, -yStart - wallTileSize, 0), wallTile.GetComponent<Transform>().rotation);
+        ((GameObject)Instantiate(wallTile, new Vector3(-xStart - wallTileSize, -yStart - wallTileSize, 0), wallTile.GetComponent<Transform>().rotation)).transform.SetParent(transform, false);
         for (float i = -yStart; i < yStart; i+= wallTileSize)
         {
-            Instantiate(wallTile, new Vector3(-xStart - wallTileSize, i, 0), wallTile.GetComponent<Transform>().rotation);
-            Instantiate(wallTile, new Vector3(xStart, i, 0), wallTile.GetComponent<Transform>().rotation);
+            ((GameObject)Instantiate(wallTile, new Vector3(-xStart - wallTileSize, i, 0), wallTile.GetComponent<Transform>().rotation)).transform.SetParent(transform, false);
+            ((GameObject)Instantiate(wallTile, new Vector3(xStart, i, 0), wallTile.GetComponent<Transform>().rotation)).transform.SetParent(transform, false);
 
         }
     }
@@ -235,25 +261,35 @@ public class MapGenerator : MonoBehaviour {
     
     BoxCollider2D createBoxTile(float x, float y)
     {
-        return (BoxCollider2D)Instantiate(boxTile, new Vector3(x, y, 0), boxTile.GetComponent<Transform>().rotation);
+        GameObject boxTileCreated = (GameObject)Instantiate(boxTile, new Vector3(x, y, 0), boxTile.GetComponent<Transform>().rotation);
+        NetworkServer.Spawn(boxTileCreated);
+        boxTileCreated.transform.SetParent(transform, false);
+        return boxTileCreated.GetComponent<BoxCollider2D>();
     }
 
     BoxCollider2D createBarrelTile(float x, float y)
     {
-        return (BoxCollider2D)Instantiate(barrelTile, new Vector3(x, y, 0), boxTile.GetComponent<Transform>().rotation);
+        GameObject barrelTileCreated = (GameObject) Instantiate(barrelTile, new Vector3(x, y, 0), boxTile.GetComponent<Transform>().rotation);
+        NetworkServer.Spawn(barrelTileCreated);
+        barrelTileCreated.transform.SetParent(transform, false);
+        return barrelTileCreated.GetComponent<BoxCollider2D>();
     }
 
     Rigidbody2D createBuildingTile(float x, float y)
     {
-        return (Rigidbody2D)Instantiate(buildingFloorTile, new Vector3(x, y, 0), buildingFloorTile.GetComponent<Transform>().rotation);
+        GameObject buildingTileCreated = (GameObject)Instantiate(buildingFloorTile, new Vector3(x, y, 0), buildingFloorTile.GetComponent<Transform>().rotation);
+        NetworkServer.Spawn(buildingTileCreated);
+        buildingTileCreated.transform.SetParent(transform, false);
+        return buildingTileCreated.GetComponent<Rigidbody2D>();
     }
 
     void createWallTile(float x, float y)
     {
-        BoxCollider2D newWall = (BoxCollider2D)Instantiate(wallTile, new Vector3(x, y, 0), wallTile.GetComponent<Transform>().rotation);
-        foreach(BoxCollider2D i in boxes)
+        GameObject newWall = (GameObject)Instantiate(wallTile, new Vector3(x, y, 0), wallTile.GetComponent<Transform>().rotation);
+        NetworkServer.Spawn(newWall);
+        foreach (BoxCollider2D i in boxes)
         {
-            if (newWall.bounds.Intersects(i.bounds))
+            if (newWall.GetComponent<BoxCollider2D>().bounds.Intersects(i.bounds))
             {
                 Destroy(newWall.gameObject);
                 return;
@@ -261,12 +297,13 @@ public class MapGenerator : MonoBehaviour {
         }
         foreach (BoxCollider2D i in barrels)
         {
-            if (newWall.bounds.Intersects(i.bounds))
+            if (newWall.GetComponent<BoxCollider2D>().bounds.Intersects(i.bounds))
             {
                 Destroy(newWall.gameObject);
                 return;
             }
         }
+        newWall.transform.SetParent(transform, false);
     }
 
     bool tileDoesNotExist(ArrayList tilePositions, Vector2 check)
@@ -293,11 +330,12 @@ public class MapGenerator : MonoBehaviour {
     }
 
 	void spawnNewFloorTile(float x, float y) {
-		Rigidbody2D floorTileClone = (Rigidbody2D)Instantiate (floorTile[Random.Range(0,3)], new Vector3 (x, y, 0), floorTile[Random.Range(0, 3)].GetComponent<Transform> ().rotation);
-	}
-
-	// Update is called once per frame
-	void Update () {
-		
-	}
+        int randomFloor = Random.Range(0, 50);
+        if (randomFloor > 0 && randomFloor < 49)
+            randomFloor = 1;
+        else if (randomFloor == 49)
+            randomFloor = 2;
+        GameObject floorTileClone = (GameObject)Instantiate(floorTile[randomFloor], new Vector3(x, y, 0), floorTile[randomFloor].GetComponent<Transform>().rotation);
+        floorTileClone.transform.SetParent(transform, false);
+    }
 }
