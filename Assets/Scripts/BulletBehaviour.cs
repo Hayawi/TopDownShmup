@@ -12,6 +12,9 @@ public class BulletBehaviour : NetworkBehaviour {
 	private float bulletTimer;
 
     [SyncVar]
+    public string playerName;
+
+    [SyncVar]
     public NetworkInstanceId spawnedBy;
 
 	// Use this for initialization
@@ -20,7 +23,6 @@ public class BulletBehaviour : NetworkBehaviour {
 
     public override void OnStartClient()
     {
-
         Physics2D.IgnoreCollision(GetComponent<BoxCollider2D>(), ClientScene.FindLocalObject(spawnedBy).GetComponent<BoxCollider2D>(), true);
     }
 

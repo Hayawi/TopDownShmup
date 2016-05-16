@@ -51,7 +51,7 @@ public class MapGenerator : NetworkBehaviour {
 	void Start () {
         float xStart = (complexSizeX / 2) * floorTileSize;
         float yStart = (complexSizeY / 2) * floorTileSize;
-        groundInitialise(xStart, yStart);
+        //groundInitialise(xStart, yStart);
         outerWallGeneration(xStart, yStart);
     }
 

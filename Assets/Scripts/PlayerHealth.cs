@@ -37,7 +37,7 @@ public class PlayerHealth : NetworkBehaviour {
             respawnTimer = (GameObject)Instantiate(respawnTimerText, new Vector3(0, 0, 0), respawnTimerText.transform.rotation);
             respawnTimer.transform.SetParent(headsUpDisplay.transform, false);
             respawnTimer.GetComponent<Text>().text = "";
-            healthPercent = (GameObject)Instantiate(healthPercentText, new Vector3(-585, -280, 0), healthPercentText.GetComponent<Transform>().rotation);
+            healthPercent = (GameObject)Instantiate(healthPercentText, new Vector3(200, 50, 0), healthPercentText.GetComponent<Transform>().rotation);
             healthPercent.transform.SetParent(headsUpDisplay.transform, false);
         }
     }
@@ -72,24 +72,40 @@ public class PlayerHealth : NetworkBehaviour {
                 respawnTimer.GetComponent<Text>().text = "";
             transform.position = spawnPoint[Random.Range(0, 7)].transform.position;
         }
-        if (playerHP < 0)
+        if (playerHP <= 0)
+        {
             playerHP = 0;
+        }
+        else
+        {
+            if (isLocalPlayer)
+                respawnTimer.GetComponent<Text>().text = "";
+        }
     }
 
     void OnCollisionEnter2D(Collision2D coll)
     {
-            if (coll.gameObject.tag == "Bullet" && playerHP > 0)
-            {
-                serverHitsPlayer(Random.Range(20,30), coll);
-                Destroy(coll.gameObject);
-            }
-            if (coll.gameObject.tag == "Explosion" && playerHP > 0)
-            {
-                serverHitsPlayer(Random.Range(30, 70), coll);
-            }
+        if (coll.gameObject.tag == "Bullet" && playerHP > 0)
+        {
+            serverHitsPlayer(Random.Range(20,30), coll);
+            Destroy(coll.gameObject);
+        }
+        if (coll.gameObject.tag == "Explosion" && playerHP > 0)
+        {
+            serverHitsPlayer(Random.Range(30, 70), coll);
+        }
     }
 
     void serverHitsPlayer(int amountOfDamage, Collision2D coll) {
-            playerHP -= amountOfDamage;
+        playerHP -= amountOfDamage;
+        if (playerHP <= 0)
+        {
+            if (coll.gameObject.tag == "Bullet")
+            {
+                if (coll.gameObject.GetComponent<BulletBehaviour>().spawnedBy != gameObject.GetComponent<NetworkIdentity>().netId)
+                    ClientScene.FindLocalObject(coll.gameObject.GetComponent<BulletBehaviour>().spawnedBy).GetComponent<PlayerSetup>().kills += 1;
+            }
+            gameObject.GetComponent<PlayerSetup>().deaths += 1;
+        }
     }
 }

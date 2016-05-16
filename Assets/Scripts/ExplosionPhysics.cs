@@ -28,7 +28,6 @@ public class ExplosionPhysics : NetworkBehaviour {
 	void Update () {
         if (health <= 0)
         {
-            Instantiate(explosion, gameObject.GetComponent<Transform>().position, explosion.GetComponent<Transform>().rotation);
             CmdSpawnCrater();
             Destroy(gameObject);
         }
@@ -37,6 +36,8 @@ public class ExplosionPhysics : NetworkBehaviour {
     [Command]
     void CmdSpawnCrater()
     {
+        BoxCollider2D explosionClone = (BoxCollider2D)Instantiate(explosion, gameObject.GetComponent<Transform>().position, explosion.GetComponent<Transform>().rotation);
+        NetworkServer.Spawn(explosionClone.gameObject);
         GameObject craterClone = (GameObject)Instantiate(crater, gameObject.GetComponent<Transform>().position, crater.GetComponent<Transform>().rotation);
         NetworkServer.Spawn(craterClone);
     }
