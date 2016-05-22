@@ -110,9 +110,11 @@ public class MapGenerator : NetworkBehaviour {
     {
         ArrayList boxesToAdd = new ArrayList();
         ArrayList barrelsToAdd = new ArrayList();
-        foreach(BoxCollider2D i in boxes)
+        float xStart = (complexSizeX / 2) * floorTileSize;
+        float yStart = (complexSizeY / 2) * floorTileSize;
+        foreach (BoxCollider2D i in boxes)
         {
-            if (Random.Range(0,3) == 1)
+            if (Random.Range(0,3) == 1 && (i.GetComponent<Transform>().position.x - boxX) > -xStart && (i.GetComponent<Transform>().position.x + boxX) < xStart && (i.GetComponent<Transform>().position.y - boxY) > -yStart && (i.GetComponent<Transform>().position.y + boxY) < yStart)
             {
                 if (Random.Range(0, 2) == 1)
                     boxesToAdd.Add(createBoxTile(i.GetComponent<Transform>().position.x - boxX, i.GetComponent<Transform>().position.y));
@@ -132,7 +134,7 @@ public class MapGenerator : NetworkBehaviour {
             boxes.Add(i);
         foreach (BoxCollider2D i in barrels)
         {
-            if (Random.Range(0, 3) == 1)
+            if (Random.Range(0, 3) == 1 && (i.GetComponent<Transform>().position.x - boxX) > -xStart && (i.GetComponent<Transform>().position.x + boxX) < xStart && (i.GetComponent<Transform>().position.y - boxY) > -yStart && (i.GetComponent<Transform>().position.y + boxY) < yStart)
             {
                 if (Random.Range(0, 2) == 1)
                     barrelsToAdd.Add(createBarrelTile(i.GetComponent<Transform>().position.x - barrelX, i.GetComponent<Transform>().position.y));
@@ -220,7 +222,7 @@ public class MapGenerator : NetworkBehaviour {
                     //left
                     if (currentTile < buildingSize && tileDoesNotExist(buildingTilePositions, new Vector2(buildingTilesArray[currentTile].position.x - buildingFloorTileSize, buildingTilesArray[currentTile].position.y)))
                     {
-                        if (currentTile <= buildingSize - 5)
+                        if (currentTile <= buildingSize - 5 && buildingTilesArray[currentTile].position.x  > -xStart)
                         {
                             createWallTile(buildingTilesArray[currentTile].position.x - buildingFloorTileSize, buildingTilesArray[currentTile].position.y);
                             buildingTilePositions.Add(buildingTilesArray[currentTile].position);
@@ -229,7 +231,7 @@ public class MapGenerator : NetworkBehaviour {
                     //right
                     if (currentTile < buildingSize && tileDoesNotExist(buildingTilePositions, new Vector2(buildingTilesArray[currentTile].position.x + buildingFloorTileSize, buildingTilesArray[currentTile].position.y)))
                     {
-                        if (currentTile <= buildingSize - 5)
+                        if (currentTile <= buildingSize - 5 && buildingTilesArray[currentTile].position.x < xStart)
                         {
                             createWallTile(buildingTilesArray[currentTile].position.x + buildingFloorTileSize, buildingTilesArray[currentTile].position.y);
                             buildingTilePositions.Add(buildingTilesArray[currentTile].position);
@@ -238,7 +240,7 @@ public class MapGenerator : NetworkBehaviour {
                     //up
                     if (currentTile < buildingSize && tileDoesNotExist(buildingTilePositions, new Vector2(buildingTilesArray[currentTile].position.x, buildingTilesArray[currentTile].position.y + buildingFloorTileSize)))
                     {
-                        if (currentTile <= buildingSize - 5)
+                        if (currentTile <= buildingSize - 5 && buildingTilesArray[currentTile].position.y < yStart)
                         {
                             createWallTile(buildingTilesArray[currentTile].position.x, buildingTilesArray[currentTile].position.y + buildingFloorTileSize);
                             buildingTilePositions.Add(buildingTilesArray[currentTile].position);
@@ -247,7 +249,7 @@ public class MapGenerator : NetworkBehaviour {
                     //down
                     if (currentTile < buildingSize && tileDoesNotExist(buildingTilePositions, new Vector2(buildingTilesArray[currentTile].position.x, buildingTilesArray[currentTile].position.y - buildingFloorTileSize)))
                     {
-                        if (currentTile <= buildingSize - 5)
+                        if (currentTile <= buildingSize - 5 && buildingTilesArray[currentTile].position.y > -yStart)
                         {
                             createWallTile(buildingTilesArray[currentTile].position.x, buildingTilesArray[currentTile].position.y - buildingFloorTileSize);
                             buildingTilePositions.Add(buildingTilesArray[currentTile].position);
@@ -286,6 +288,7 @@ public class MapGenerator : NetworkBehaviour {
     void createWallTile(float x, float y)
     {
         GameObject newWall = (GameObject)Instantiate(wallTile, new Vector3(x, y, 0), wallTile.GetComponent<Transform>().rotation);
+        newWall.tag = "Destructible";
         NetworkServer.Spawn(newWall);
         foreach (BoxCollider2D i in boxes)
         {

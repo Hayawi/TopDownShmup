@@ -11,7 +11,7 @@ public class DestructiblePhysics : MonoBehaviour {
 
     void OnCollisionEnter2D(Collision2D coll)
     {
-        if (coll.gameObject.tag == "Explosion")
+        if (coll.gameObject.tag == "Explosion" && gameObject.tag == "Destructible")
         {
             Destroy(gameObject);
         }

@@ -65,8 +65,10 @@ namespace UnityEngine.Networking
         [SyncVar]
         ArrayList playerNetIDs = new ArrayList();
 
+        [SyncVar]
         public int gameTime = 600;
 
+        [SyncVar]
         public int originalGameTime = 600;
 
         public Text gameTimerText;

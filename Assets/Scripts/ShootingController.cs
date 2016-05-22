@@ -29,7 +29,17 @@ public class ShootingController : NetworkBehaviour {
 
     public string playerName;
 
+    public GameObject muzzleFlash;
+
+    [SyncVar]
+    bool onStatus = false;
+
+    [SyncVar]
+    bool shootingSoundTrigger = false;
+
     Image[] ammo;
+
+    public GameObject shootingSound;
 
 	// Use this for initialization
 	void Start () {
@@ -55,43 +65,56 @@ public class ShootingController : NetworkBehaviour {
                 for (int i = 0; i < clipSize; i++)
                     ammo[i].gameObject.transform.SetParent(GameObject.Find("Canvas(Clone)").transform);
             }
-        }
 
-        if (!playerAnimator.GetBool("Dead") && !GameObject.Find("NetworkManager").GetComponent<NetworkManagerUI>().pausePanel.activeSelf)
-        {
-            if (Input.GetButton("Shoot") && fireTimer >= rateOfFire)
+            if(Input.GetButton("Shoot") && fireTimer >= rateOfFire && !playerAnimator.GetBool("Dead") && !GameObject.Find("NetworkManager").GetComponent<NetworkManagerUI>().pausePanel.activeSelf && ammoCount > 0)
             {
-                if (ammoCount > 0)
-                {
                     CmdspawnNewBullet(playerName);
+                    CmdMuzzleFlash(true);
+                    CmdShootingSound(true);
+                    shootingSoundTrigger = true;
+                    onStatus = true;
                     fireTimer = 0;
                     ammoCount--;
-                    if (isLocalPlayer)
-                        updatingHUD();
-                }
+                    updatingHUD();
+                    playerAnimator.SetBool("Shooting", true);
             }
+
+            if (!Input.GetButton("Shoot") || ammoCount == 0)
+                playerAnimator.SetBool("Shooting", false);
+
+            if (Input.GetButton("Reload"))
+                ammoCount = 0;
+
+            if (fireTimer >= rateOfFire / 4)
+                CmdMuzzleFlash(false);
 
             if (ammoCount == 0 && fireTimer >= reloadSpeed)
             {
                 fireTimer = 0;
                 ammoCount = clipSize;
-                if (isLocalPlayer)
-                    reloadAll();
+                reloadAll();
             }
-            if (Input.GetButton("Shoot"))
-                playerAnimator.SetBool("Shooting", true);
-            else
-                playerAnimator.SetBool("Shooting", false);
 
-            if (Input.GetButton("Reload"))
-                ammoCount = 0;
+            if (playerAnimator.GetBool("Dead"))
+            {
+                ammoCount = clipSize;
+                reloadAll();
+            }
+
             fireTimer += 1;
         }
-        if (playerAnimator.GetBool("Dead"))
+
+        if (shootingSoundTrigger && !isServer)
         {
-            ammoCount = clipSize;
-            reloadAll();
+            shootingSound.GetComponent<AudioSource>().PlayOneShot(shootingSound.GetComponent<AudioSource>().clip);
+            if (isLocalPlayer)
+            {
+                shootingSoundTrigger = false;
+                CmdShootingSound(false);
+            }
         }
+        if (!isServer)
+            muzzleFlash.SetActive(onStatus);
     }
 
     void updatingHUD()
@@ -127,5 +150,20 @@ public class ShootingController : NetworkBehaviour {
         bulletClone.GetComponent<BulletBehaviour>().spawnedBy = GetComponent<NetworkIdentity>().netId;
         bulletClone.GetComponent<BulletBehaviour>().playerName = playerNameToPass;
         NetworkServer.Spawn(bulletClone);
+    }
+
+    [Command]
+    void CmdMuzzleFlash(bool on)
+    {
+        onStatus = on;
+        muzzleFlash.SetActive(on);
+    }
+
+    [Command]
+    void CmdShootingSound(bool on)
+    {
+        shootingSoundTrigger = on;
+        if (on)
+            shootingSound.GetComponent<AudioSource>().PlayOneShot(shootingSound.GetComponent<AudioSource>().clip);
     }
 }

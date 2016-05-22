@@ -16,7 +16,7 @@ public class PlayerSetup : NetworkBehaviour {
     public int deaths;
 
     [SyncVar]
-    public int gameTime;
+    public int gameTime = 600;
 
     Camera sceneCamera;
 
