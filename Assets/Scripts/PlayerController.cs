@@ -13,31 +13,44 @@ public class PlayerController : NetworkBehaviour {
 
 	private Animator playerAnimator;
 
+    public GameObject walkingSound;
+
 	void Start() {
 		playerAnimator = characterBody.GetComponent<Animator> ();
 	}
 
-	// Update is called once per frame
-	void FixedUpdate () {
-        if (!playerAnimator.GetBool("Dead"))
+    // Update is called once per frame
+    void FixedUpdate() {
+        if (!playerAnimator.GetBool("Dead") && isLocalPlayer)
         {
             if (Input.GetButton("Horizontal"))
             {
-                GetComponent<Transform>().Translate(new Vector3(characterSpeed * Input.GetAxis("Horizontal"), 0, 0));
-                playerAnimator.SetBool("Walking", true);
+                GetComponent<Rigidbody2D>().AddForce(new Vector2(characterSpeed * Input.GetAxis("Horizontal"), 0));
+                //GetComponent<Transform>().Translate(new Vector3(characterSpeed * Input.GetAxis("Horizontal"), 0, 0));
             }
             if (Input.GetButton("Vertical"))
             {
-                GetComponent<Transform>().Translate(new Vector3(0, characterSpeed * Input.GetAxis("Vertical"), 0));
-                playerAnimator.SetBool("Walking", true);
-            }
-            if (!Input.GetButton("Vertical") && !Input.GetButton("Horizontal"))
-            {
-                playerAnimator.SetBool("Walking", false);
+                GetComponent<Rigidbody2D>().AddForce(new Vector2(0, characterSpeed * Input.GetAxis("Vertical")));
+                //GetComponent<Transform>().Translate(new Vector3(0, characterSpeed * Input.GetAxis("Vertical"), 0));
             }
             FaceMouse();
         }
-	}
+
+        if (!playerAnimator.GetBool("Dead") && GetComponent<Rigidbody2D>().velocity.magnitude > 5)
+        {
+            playerAnimator.SetBool("Walking", true);
+            if (!walkingSound.GetComponent<AudioSource>().isPlaying)
+            {
+                walkingSound.GetComponent<AudioSource>().Play();
+                walkingSound.GetComponent<AudioSource>().loop = true;
+            }
+        }
+        else
+        {
+            playerAnimator.SetBool("Walking", false);
+            walkingSound.GetComponent<AudioSource>().loop = false;
+        }
+    }
 
 	 void FaceMouse () {
 		Vector3 mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);

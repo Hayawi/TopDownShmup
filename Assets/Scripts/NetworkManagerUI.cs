@@ -4,8 +4,11 @@ namespace UnityEngine.Networking
 {
     using UnityEngine.UI;
     using UnityEngine.SceneManagement;
+    using System.Collections.Generic;
     using System.Collections;
     using System;
+    using UnityEngine.Networking.Types;
+    using UnityEngine.Networking.Match;
     [AddComponentMenu("Network/NetworkManagerHUD")]
     [RequireComponent(typeof(NetworkManager))]
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -82,6 +85,12 @@ namespace UnityEngine.Networking
         // Runtime variable
         bool showServer = false;
 
+        List<MatchDesc> matchList = new List<MatchDesc>();
+
+        bool matchCreated;
+
+        NetworkMatch networkMatch;
+
         void Awake()
         {
             originalGameTime *= 60;
@@ -92,6 +101,130 @@ namespace UnityEngine.Networking
             noIP.enabled = false;
             connectingPanel.SetActive(false);
             manager = gameObject.GetComponent<NetworkManager>();
+            //networkMatch = gameObject.AddComponent<NetworkMatch>();
+            PlayerPrefs.SetString("CloudNetworkingId", "1093751");
+            manager.StartMatchMaker();
+            manager.matchMaker.SetProgramAppID((AppID)1093751);
+        }
+
+        public void createRoom()
+        {
+            if (manager.matchMaker == null)
+            {
+                manager.StartMatchMaker();
+                manager.matchMaker.SetProgramAppID((AppID)1093751);
+            }
+            if (playerName.text != "")
+            {
+                CreateMatchRequest create = new CreateMatchRequest();
+                create.name = playerName.text;
+                create.size = 4;
+                create.advertise = true;
+                create.password = "";
+
+                manager.matchMaker.CreateMatch(create, OnMatchCreate);
+            }
+            else
+            {
+                noPlayerName.enabled = true;
+            }
+        }
+
+        public void listRooms()
+        {
+            if (manager.matchMaker == null)
+            {
+                manager.StartMatchMaker();
+                manager.matchMaker.SetProgramAppID((AppID)1093751);
+            }
+            if (playerName.text != "")
+            {
+                manager.matchMaker.ListMatches(0, 20, "", OnMatchList);
+            }
+        }
+
+        void OnGUI()
+        {
+            // You would normally not join a match you created yourself but this is possible here for demonstration purposes.
+            if (GUILayout.Button("Create Room"))
+            {
+                CreateMatchRequest create = new CreateMatchRequest();
+                create.name = "NewRoom";
+                create.size = 4;
+                create.advertise = true;
+                create.password = "";
+
+                manager.matchMaker.CreateMatch(create, OnMatchCreate);
+            }
+
+            if (GUILayout.Button("List rooms"))
+            {
+                manager.matchMaker.ListMatches(0, 20, "", OnMatchList);
+            }
+
+            if (matchList.Count > 0)
+            {
+                print("HEllo");
+                GUILayout.Label("Current rooms");
+            }
+            foreach (var match in matchList)
+            {
+                if (GUILayout.Button(match.name))
+                {
+                    manager.matchMaker.JoinMatch(match.networkId, "", OnMatchJoined);
+                }
+            }
+        }
+
+        public void OnMatchCreate(CreateMatchResponse matchResponse)
+        {
+            if (matchResponse.success)
+            {
+                Debug.Log("Create match succeeded");
+                matchCreated = true;
+                Utility.SetAccessTokenForNetwork(matchResponse.networkId, new NetworkAccessToken(matchResponse.accessTokenString));
+                NetworkServer.Listen(new MatchInfo(matchResponse), 9000);
+                startHost();
+            }
+            else
+            {
+                Debug.LogError("Create match failed");
+            }
+        }
+
+        public void OnMatchList(ListMatchResponse matchListResponse)
+        {
+            if (matchListResponse.success && matchListResponse.matches != null)
+            {
+                manager.matchMaker.JoinMatch(matchListResponse.matches[0].networkId, "", OnMatchJoined);
+            }
+        }
+
+        public void OnMatchJoined(JoinMatchResponse matchJoin)
+        {
+            if (matchJoin.success)
+            {
+                Debug.Log("Join match succeeded");
+                if (matchCreated)
+                {
+                    Debug.LogWarning("Match already set up, aborting...");
+                    return;
+                }
+                Utility.SetAccessTokenForNetwork(matchJoin.networkId, new NetworkAccessToken(matchJoin.accessTokenString));
+                NetworkClient myClient = new NetworkClient();
+                myClient.RegisterHandler(MsgType.Connect, OnConnected);
+                myClient.Connect(new MatchInfo(matchJoin));
+                startClientMatchmaking();
+            }
+            else
+            {
+                Debug.LogError("Join match failed");
+            }
+        }
+
+        public void OnConnected(NetworkMessage msg)
+        {
+            Debug.Log("Connected!");
         }
 
         public void updateGameTime(int playerGameTime)
@@ -177,12 +310,12 @@ namespace UnityEngine.Networking
             if (!showGUI)
                 return;
 
-            if (Input.GetButtonDown("Pause") && ((NetworkClient.active && manager.IsClientConnected()) || NetworkServer.active) && !ending)
+            if (Input.GetButtonDown("Pause") && ((NetworkClient.active && manager.IsClientConnected()) || NetworkServer.active /*manager.matchMaker != null*/) && !ending)
             {
                 pausePanel.SetActive(!pausePanel.activeSelf);
             }
 
-            if (Input.GetButton("Leaderboards") && ((NetworkClient.active && manager.IsClientConnected()) || NetworkServer.active) && !ending)
+            if (Input.GetButton("Leaderboards") && ((NetworkClient.active && manager.IsClientConnected()) || NetworkServer.active /*manager.matchMaker != null*/) && !ending)
             {
                 for (int i = 0; i < playerKills.Count; i++)
                 {
@@ -196,7 +329,7 @@ namespace UnityEngine.Networking
                 leaderboardPanel.SetActive(false);
             }
 
-            if (!NetworkClient.active && !NetworkServer.active && manager.matchMaker == null)
+            if (!NetworkClient.active && !NetworkServer.active/*manager.matchMaker == null*/)
             {
                 if (winner != null)
                     Destroy(winner.gameObject);
@@ -222,7 +355,7 @@ namespace UnityEngine.Networking
                 connectingPanel.SetActive(false);
             }
             
-            if ((NetworkClient.active && manager.IsClientConnected()) || NetworkServer.active)
+            if ((NetworkClient.active && manager.IsClientConnected()) || NetworkServer.active /*manager.matchMaker != null*/)
             {
                 panelToToggleActive.SetActive(false);
             }
@@ -237,26 +370,6 @@ namespace UnityEngine.Networking
                 configPanel.SetActive(false);
                 attemptingConnect.GetComponent<Text>().text = "Attempting to Connect to " + manager.networkAddress;
             }
-            /*if (Input.GetKeyDown(KeyCode.S))
-            {
-                manager.StartServer();
-            }
-            if (Input.GetKeyDown(KeyCode.H))
-            {
-                manager.StartHost();
-            }
-            if (Input.GetKeyDown(KeyCode.C))
-            {
-                manager.StartClient();
-            }
-        }
-        if (NetworkServer.active && NetworkClient.active)
-        {
-            if (Input.GetKeyDown(KeyCode.X))
-            {
-                manager.StopHost();
-            }
-        }*/
         }
 
         public void closePauseScreen()
@@ -303,6 +416,21 @@ namespace UnityEngine.Networking
             }
         }
 
+        public void startClientMatchmaking()
+        {
+            noPlayerName.enabled = false;
+            if (playerName.text != "")
+            {
+                chosenPlayerName = playerName.text;
+                //playerNames.Add(chosenPlayerName);
+                manager.StartClient();
+            }
+            if (playerName.text == "")
+            {
+                noPlayerName.enabled = true;
+            }
+        }
+
         public void startClient()
         {
             noPlayerName.enabled = false;
@@ -329,165 +457,6 @@ namespace UnityEngine.Networking
             SceneManager.LoadScene("MainMenu");
             Destroy(manager.gameObject);
         }
-
-        /*void OnGUI()
-        {
-            if (!showGUI)
-                return;
-
-            int xpos = 10 + offsetX;
-            int ypos = 40 + offsetY;
-            int spacing = 24;
-
-            if (!NetworkClient.active && !NetworkServer.active && manager.matchMaker == null)
-            {
-                if (GUI.Button(new Rect(xpos, ypos, 200, 20), "LAN Host(H)"))
-                {
-                    manager.StartHost();
-                }
-                ypos += spacing;
-
-                if (GUI.Button(new Rect(xpos, ypos, 105, 20), "LAN Client(C)"))
-                {
-                    manager.StartClient();
-                }
-                manager.networkAddress = GUI.TextField(new Rect(xpos + 100, ypos, 95, 20), manager.networkAddress);
-                ypos += spacing;
-
-                if (GUI.Button(new Rect(xpos, ypos, 200, 20), "LAN Server Only(S)"))
-                {
-                    manager.StartServer();
-                }
-                ypos += spacing;
-            }
-            else
-            {
-                if (NetworkServer.active)
-                {
-                    GUI.Label(new Rect(xpos, ypos, 300, 20), "Server: port=" + manager.networkPort);
-                    ypos += spacing;
-                }
-                if (NetworkClient.active)
-                {
-                    GUI.Label(new Rect(xpos, ypos, 300, 20), "Client: address=" + manager.networkAddress + " port=" + manager.networkPort);
-                    ypos += spacing;
-                }
-            }
-
-            if (NetworkClient.active && !ClientScene.ready)
-            {
-                if (GUI.Button(new Rect(xpos, ypos, 200, 20), "Client Ready"))
-                {
-                    ClientScene.Ready(manager.client.connection);
-
-                    if (ClientScene.localPlayers.Count == 0)
-                    {
-                        ClientScene.AddPlayer(0);
-                    }
-                }
-                ypos += spacing;
-            }
-
-            if (NetworkServer.active || NetworkClient.active)
-            {
-                if (GUI.Button(new Rect(xpos, ypos, 200, 20), "Stop (X)"))
-                {
-                    manager.StopHost();
-                }
-                ypos += spacing;
-            }
-
-            if (!NetworkServer.active && !NetworkClient.active)
-            {
-                ypos += 10;
-
-                if (manager.matchMaker == null)
-                {
-                    if (GUI.Button(new Rect(xpos, ypos, 200, 20), "Enable Match Maker (M)"))
-                    {
-                        manager.StartMatchMaker();
-                    }
-                    ypos += spacing;
-                }
-                else
-                {
-                    if (manager.matchInfo == null)
-                    {
-                        if (manager.matches == null)
-                        {
-                            if (GUI.Button(new Rect(xpos, ypos, 200, 20), "Create Internet Match"))
-                            {
-                                manager.matchMaker.CreateMatch(manager.matchName, manager.matchSize, true, "", manager.OnMatchCreate);
-                            }
-                            ypos += spacing;
-
-                            GUI.Label(new Rect(xpos, ypos, 100, 20), "Room Name:");
-                            manager.matchName = GUI.TextField(new Rect(xpos + 100, ypos, 100, 20), manager.matchName);
-                            ypos += spacing;
-
-                            ypos += 10;
-
-                            if (GUI.Button(new Rect(xpos, ypos, 200, 20), "Find Internet Match"))
-                            {
-                                manager.matchMaker.ListMatches(0, 20, "", manager.OnMatchList);
-                            }
-                            ypos += spacing;
-                        }
-                        else
-                        {
-                            foreach (var match in manager.matches)
-                            {
-                                if (GUI.Button(new Rect(xpos, ypos, 200, 20), "Join Match:" + match.name))
-                                {
-                                    manager.matchName = match.name;
-                                    manager.matchSize = (uint)match.currentSize;
-                                    manager.matchMaker.JoinMatch(match.networkId, "", manager.OnMatchJoined);
-                                }
-                                ypos += spacing;
-                            }
-                        }
-                    }
-
-                    if (GUI.Button(new Rect(xpos, ypos, 200, 20), "Change MM server"))
-                    {
-                        showServer = !showServer;
-                    }
-                    if (showServer)
-                    {
-                        ypos += spacing;
-                        if (GUI.Button(new Rect(xpos, ypos, 100, 20), "Local"))
-                        {
-                            manager.SetMatchHost("localhost", 1337, false);
-                            showServer = false;
-                        }
-                        ypos += spacing;
-                        if (GUI.Button(new Rect(xpos, ypos, 100, 20), "Internet"))
-                        {
-                            manager.SetMatchHost("mm.unet.unity3d.com", 443, true);
-                            showServer = false;
-                        }
-                        ypos += spacing;
-                        if (GUI.Button(new Rect(xpos, ypos, 100, 20), "Staging"))
-                        {
-                            manager.SetMatchHost("staging-mm.unet.unity3d.com", 443, true);
-                            showServer = false;
-                        }
-                    }
-
-                    ypos += spacing;
-
-                    GUI.Label(new Rect(xpos, ypos, 300, 20), "MM Uri: " + manager.matchMaker.baseUri);
-                    ypos += spacing;
-
-                    if (GUI.Button(new Rect(xpos, ypos, 200, 20), "Disable Match Maker"))
-                    {
-                        manager.StopMatchMaker();
-                    }
-                    ypos += spacing;
-                }
-            }
-        }*/
-
     }
 };
 #endif //ENABLE_UNET

@@ -31,15 +31,29 @@ public class ShootingController : NetworkBehaviour {
 
     public GameObject muzzleFlash;
 
-    [SyncVar]
+    bool playSound;
+
+    [SyncVar(hook = "onStatusChange")]
     bool onStatus = false;
 
-    [SyncVar]
+    [SyncVar(hook = "onSoundChange")]
     bool shootingSoundTrigger = false;
 
     Image[] ammo;
 
     public GameObject shootingSound;
+
+    void onSoundChange(bool soundTriggerChange)
+    {
+        if (!isServer && !isLocalPlayer)
+            shootingSound.GetComponent<AudioSource>().PlayOneShot(shootingSound.GetComponent<AudioSource>().clip);
+        shootingSoundTrigger = soundTriggerChange;
+    }
+
+    void onStatusChange(bool statusChange)
+    {
+        onStatus = statusChange;
+    }
 
 	// Use this for initialization
 	void Start () {
@@ -71,8 +85,9 @@ public class ShootingController : NetworkBehaviour {
                     CmdspawnNewBullet(playerName);
                     CmdMuzzleFlash(true);
                     CmdShootingSound(true);
-                    shootingSoundTrigger = true;
                     onStatus = true;
+                    shootingSoundTrigger = true;
+                    shootingSound.GetComponent<AudioSource>().PlayOneShot(shootingSound.GetComponent<AudioSource>().clip);
                     fireTimer = 0;
                     ammoCount--;
                     updatingHUD();
@@ -86,7 +101,10 @@ public class ShootingController : NetworkBehaviour {
                 ammoCount = 0;
 
             if (fireTimer >= rateOfFire / 4)
+            {
                 CmdMuzzleFlash(false);
+                onStatus = false;
+            }
 
             if (ammoCount == 0 && fireTimer >= reloadSpeed)
             {
@@ -104,17 +122,13 @@ public class ShootingController : NetworkBehaviour {
             fireTimer += 1;
         }
 
-        if (shootingSoundTrigger && !isServer)
+        muzzleFlash.SetActive(onStatus);
+
+        if (shootingSoundTrigger)
         {
-            shootingSound.GetComponent<AudioSource>().PlayOneShot(shootingSound.GetComponent<AudioSource>().clip);
-            if (isLocalPlayer)
-            {
-                shootingSoundTrigger = false;
-                CmdShootingSound(false);
-            }
+            CmdShootingSound(false);
+            shootingSoundTrigger = false;
         }
-        if (!isServer)
-            muzzleFlash.SetActive(onStatus);
     }
 
     void updatingHUD()
@@ -156,14 +170,13 @@ public class ShootingController : NetworkBehaviour {
     void CmdMuzzleFlash(bool on)
     {
         onStatus = on;
-        muzzleFlash.SetActive(on);
     }
 
     [Command]
     void CmdShootingSound(bool on)
     {
-        shootingSoundTrigger = on;
         if (on)
             shootingSound.GetComponent<AudioSource>().PlayOneShot(shootingSound.GetComponent<AudioSource>().clip);
+        shootingSoundTrigger = on;
     }
 }
